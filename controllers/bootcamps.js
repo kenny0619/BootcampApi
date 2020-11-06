@@ -3,6 +3,7 @@ const { model } = require("mongoose");
 
 // import asuncHandler middleware
 const asyncHandler = require("../middleware/async");
+const { param } = require("../routes");
 
 // import error response from utils
 const ErrorResponse = require("../utils/errorResponse");
@@ -21,16 +22,42 @@ const geocoder = require("../utils/geocoder");
 exports.getBootCamps = asyncHandler(async (req, res, next) => {
   let query;
 
-  let queryStr = JSON.stringify(req.query);
+  // copy query
+  const reqQuery = { ...req.query };
 
+  // Fields to exclude
+  const removeFields = ["select", "sort"];
+
+  // loop over removeFields and delete from reqQuery
+  removeFields.forEach((param) => delete reqQuery[param]);
+
+  // create query string
+  let queryStr = JSON.stringify(reqQuery);
+
+  // create operators (gt, gte, etc)
   queryStr = queryStr.replace(
     /\b(gt|gte|lt|lte|in)\b/gi,
     (match) => `$${match}`
   );
 
+  // finding resource
   query = Bootcamp.find(JSON.parse(queryStr));
 
-  // find all bootcamps
+  // Select fields
+  if (req.query.select) {
+    const fields = req.query.select.split(",").join(" ");
+    query = query.select(fields);
+  }
+
+  // Sort
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(",").join(" ");
+    query = query.sort(sortBy);
+  } else {
+    query = query.sort("-createdAt");
+  }
+
+  // executing query
   const bootcamps = await query;
 
   // client response
