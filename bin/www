@@ -25,9 +25,22 @@ const server = http.createServer(app);
  * Listen on provided port, on all network interfaces.
  */
 
-server.listen(port);
+server.listen(
+  port,
+  console.log(
+    `Server running in ${process.env.NODE_ENV} mode on ${port}`.yellow.bold
+  )
+);
 server.on("error", onError);
 server.on("listening", onListening);
+
+// Handle unhandled Promise Rejection
+process.on("unhandledRejection", (err, promise) => {
+  console.log(`Error: ${err.message}`.red);
+
+  //close server and exit process
+  server.close(() => process.exit(1));
+});
 
 /**
  * Normalize a port into a number, string, or false.
